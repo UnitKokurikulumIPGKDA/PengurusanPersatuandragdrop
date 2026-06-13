@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aktiviti Kokurikulum - SPI KPM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0c1222;
+            --card: #162033;
+            --border: #263048;
+            --text: #e8edf5;
+            --muted: #8899b3;
+            --green: #10b981;
+            --amber: #f59e0b;
+            --blue: #3b82f6;
+            --purple: #8b5cf6;
+            --red: #ef4444;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Source Sans 3', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        h1, h2, h3 { font-family: 'Outfit', sans-serif; }
+        
+        .screen { display: none; position: fixed; inset: 0; overflow: auto; }
+        .screen.active { display: flex; }
+        
+        .login-box {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.75rem;
+            width: 100%;
+            max-width: 400px;
+            margin: auto;
+        }
+        
+        .input-field {
+            width: 100%;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 0.7rem 1rem;
+            color: var(--text);
+            font-size: 1rem;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: var(--green);
+        }
+        
+        .btn {
+            width: 100%;
+            background: var(--green);
+            border: none;
+            border-radius: 8px;
+            padding: 0.7rem 1.25rem;
+            color: white;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        
+        .debug-box {
+            background: #080c14;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.6rem;
+            margin-top: 0.75rem;
+            font-family: monospace;
+            font-size: 0.7rem;
+            color: #4ade80;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+        
+        .drop-zone {
+            background: var(--card);
+            border: 2px dashed var(--border);
+            border-radius: 10px;
+            padding: 0.6rem;
+            min-height: 140px;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+        .drop-zone.drag-over {
+            border-style: solid;
+            transform: scale(1.005);
+        }
+        .drop-zone.green.drag-over { border-color: var(--green); box-shadow: 0 0 12px rgba(16,185,129,0.2); }
+        .drop-zone.amber.drag-over { border-color: var(--amber); box-shadow: 0 0 12px rgba(245,158,11,0.2); }
+        .drop-zone.blue.drag-over { border-color: var(--blue); box-shadow: 0 0 12px rgba(59,130,246,0.2); }
+        .drop-zone.purple.drag-over { border-color: var(--purple); box-shadow: 0 0 12px rgba(139,92,246,0.2); }
+        
+        .zone-header {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: 0.4rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .zone-content {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 60px;
+            max-height: 180px;
+        }
+        
+        .draggable {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 0.35rem 0.6rem;
+            margin-bottom: 0.25rem;
+            cursor: grab;
+            transition: all 0.15s;
+            user-select: none;
+            font-size: 0.8rem;
+            line-height: 1.3;
+        }
+        .draggable:hover { border-color: var(--green); transform: translateX(2px); }
+        .draggable.dragging { opacity: 0.4; }
+        .draggable.placed { cursor: default; font-size: 0.75rem; padding: 0.25rem 0.5rem; }
+        .draggable.placed.correct { background: rgba(16,185,129,0.12); border-color: var(--green); }
+        .draggable.placed.wrong { background: rgba(239,68,68,0.12); border-color: var(--red); }
+        
+        .progress-bar {
+            height: 5px;
+            background: var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--green);
+            transition: width 0.3s;
+        }
+        
+        .icon-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.25rem;
+        }
+        
+        .fullscreen-warning {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            text-align: center;
+            padding: 2rem;
+        }
+        .fullscreen-warning.show { display: flex; }
+        
+        @media (max-width: 768px) {
+            .items-grid { grid-template-columns: 1fr; }
+            .zone-content { max-height: 120px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="fullscreen-warning" id="fsWarning">
+        <div>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" style="margin:0 auto 0.75rem">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+            </svg>
+            <h2 style="margin-bottom:0.4rem;font-size:1.1rem">Kekal dalam Skrin Penuh</h2>
+            <button class="btn" style="width:auto;padding:0.5rem 1.25rem;margin-top:0.75rem" onclick="enterFS()">Kembali</button>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div class="screen active" id="loginScr">
+        <div class="login-box">
+            <div style="text-align:center;margin-bottom:1.25rem">
+                <div style="width:52px;height:52px;background:var(--green);border-radius:10px;margin:0 auto 0.75rem;display:flex;align-items:center;justify-content:center">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
+                </div>
+                <h1 style="font-size:1.3rem">Aktiviti Kokurikulum</h1>
+                <p style="color:var(--muted);font-size:0.8rem">Klasifikasi 3 Bidang Utama (SPI KPM)</p>
+            </div>
+            
+            <form id="loginForm">
+                <label style="display:block;font-size:0.8rem;margin-bottom:0.3rem;color:var(--muted)">No. Kad Pengenalan</label>
+                <input type="text" id="inputKP" class="input-field" placeholder="Contoh: 061216110372" required style="margin-bottom:0.75rem">
+                <button type="submit" class="btn">Masuk</button>
+            </form>
+            
+            <div class="debug-box" id="debugBox">
+                <div>Pelajar: <span id="debugCount">-</span> | Aktiviti: <span id="debugItems">-</span></div>
+                <div id="debugMsg"></div>
+            </div>
+            
+            <p style="text-align:center;margin-top:0.75rem;font-size:0.75rem;color:var(--muted)">
+                <span style="color:var(--amber);font-weight:600">Notis:</span> 1 percubaan sahaja
+            </p>
+        </div>
+    </div>
+
+    <!-- Activity Screen -->
+    <div class="screen" id="activityScr">
+        <div style="min-height:100%;display:flex;flex-direction:column">
+            <div style="background:var(--card);padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.4rem">
+                <div style="display:flex;align-items:center;gap:0.6rem">
+                    <h2 style="font-size:0.9rem">Klasifikasi Kokurikulum</h2>
+                    <span style="background:var(--bg);padding:0.2rem 0.5rem;border-radius:12px;font-size:0.7rem">
+                        <span id="sName">-</span> | <span id="sClass" style="color:var(--muted)">-</span>
+                    </span>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.4rem">
+                    <span style="font-size:0.7rem;color:var(--muted)">Kemajuan:</span>
+                    <div class="progress-bar" style="width:70px"><div class="progress-fill" id="progBar" style="width:0%"></div></div>
+                    <span style="font-size:0.75rem;font-weight:600"><span id="progNum">0</span>/<span id="totalItems">100</span></span>
+                </div>
+            </div>
+            
+            <div style="flex:1;overflow:auto;padding:0.5rem">
+                <!-- Drop Zones - 2x2 Grid -->
+                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.5rem;margin-bottom:0.5rem">
+                    <div class="drop-zone green" data-cat="akademik">
+                        <div class="zone-header">
+                            <div class="icon-badge" style="background:var(--green)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                            </div>
+                            <div style="flex:1"><div style="font-weight:700;font-size:0.8rem">Persatuan Akademik</div></div>
+                            <span style="background:var(--bg);padding:0.12rem 0.4rem;border-radius:8px;font-size:0.65rem"><span class="cnt">0</span></span>
+                        </div>
+                        <div class="zone-content zone-items" data-cat="akademik"></div>
+                    </div>
+                    
+                    <div class="drop-zone amber" data-cat="kelab">
+                        <div class="zone-header">
+                            <div class="icon-badge" style="background:var(--amber)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                            </div>
+                            <div style="flex:1"><div style="font-weight:700;font-size:0.8rem">Kelab & Persatuan</div></div>
+                            <span style="background:var(--bg);padding:0.12rem 0.4rem;border-radius:8px;font-size:0.65rem"><span class="cnt">0</span></span>
+                        </div>
+                        <div class="zone-content zone-items" data-cat="kelab"></div>
+                    </div>
+                    
+                    <div class="drop-zone blue" data-cat="uniform">
+                        <div class="zone-header">
+                            <div class="icon-badge" style="background:var(--blue)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                            </div>
+                            <div style="flex:1"><div style="font-weight:700;font-size:0.8rem">Badan Beruniform</div></div>
+                            <span style="background:var(--bg);padding:0.12rem 0.4rem;border-radius:8px;font-size:0.65rem"><span class="cnt">0</span></span>
+                        </div>
+                        <div class="zone-content zone-items" data-cat="uniform"></div>
+                    </div>
+                    
+                    <div class="drop-zone purple" data-cat="sukan">
+                        <div class="zone-header">
+                            <div class="icon-badge" style="background:var(--purple)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                            </div>
+                            <div style="flex:1"><div style="font-weight:700;font-size:0.8rem">Sukan & Permainan</div></div>
+                            <span style="background:var(--bg);padding:0.12rem 0.4rem;border-radius:8px;font-size:0.65rem"><span class="cnt">0</span></span>
+                        </div>
+                        <div class="zone-content zone-items" data-cat="sukan"></div>
+                    </div>
+                </div>
+                
+                <!-- Items List -->
+                <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.6rem">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
+                        <h3 style="font-size:0.8rem">Senarai Aktiviti (Seret ke Kategori)</h3>
+                        <span style="font-size:0.7rem;color:var(--muted)">Tidak Dijawab: <span id="remainCount">100</span></span>
+                    </div>
+                    <div id="itemsBox" class="items-grid" style="max-height:280px;overflow-y:auto;padding-right:0.25rem"></div>
+                </div>
+            </div>
+            
+            <div style="background:var(--card);padding:0.5rem 0.75rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:0.7rem;color:var(--muted)">Pastikan semua item diklasifikasikan</span>
+                <button id="submitBtn" class="btn" style="width:auto;padding:0.4rem 1rem;font-size:0.85rem" disabled>Hantar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Screen -->
+    <div class="screen" id="resultScr">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.25rem;max-width:360px;margin:auto;text-align:center">
+            <h2 style="margin-bottom:0.75rem;font-size:1.15rem">Keputusan</h2>
+            <div id="scoreCircle" style="width:100px;height:100px;border-radius:50%;background:conic-gradient(var(--green) 0deg, var(--border) 0deg);display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem;transition:all 0.8s">
+                <div style="width:78px;height:78px;border-radius:50%;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center">
+                    <div style="font-size:1.75rem;font-weight:800" id="scoreNum">0</div>
+                    <div style="font-size:0.65rem;color:var(--muted)">daripada 100</div>
+                </div>
+            </div>
+            <div style="margin-bottom:0.75rem">
+                <div id="scoreMsg" style="font-size:0.95rem;margin-bottom:0.2rem">-</div>
+                <div id="scorePct" style="font-size:0.8rem;color:var(--muted)">-</div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.3rem;margin-bottom:0.75rem">
+                <div style="background:var(--bg);padding:0.4rem;border-radius:5px"><div style="font-size:1rem;font-weight:700;color:var(--green)" id="cCount">0</div><div style="font-size:0.65rem;color:var(--muted)">Betul</div></div>
+                <div style="background:var(--bg);padding:0.4rem;border-radius:5px"><div style="font-size:1rem;font-weight:700;color:var(--red)" id="iCount">0</div><div style="font-size:0.65rem;color:var(--muted)">Salah</div></div>
+                <div style="background:var(--bg);padding:0.4rem;border-radius:5px"><div style="font-size:1rem;font-weight:700;color:var(--muted)" id="sCount">0</div><div style="font-size:0.65rem;color:var(--muted)">Tidak Jawab</div></div>
+            </div>
+            <div style="background:var(--bg);padding:0.4rem;border-radius:5px;text-align:left;margin-bottom:0.4rem">
+                <div style="font-size:0.65rem;color:var(--muted)">Pelajar:</div>
+                <div id="rName" style="font-weight:600;font-size:0.85rem">-</div>
+                <div id="rClass" style="font-size:0.75rem;color:var(--muted)">-</div>
+            </div>
+            <div style="background:var(--bg);padding:0.4rem;border-radius:5px;text-align:left">
+                <div style="font-size:0.65rem;color:var(--muted)">Masa:</div>
+                <div id="rTime" style="font-weight:600;font-size:0.85rem">-</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function debug(msg) {
+            const el = document.getElementById('debugMsg');
+            if (el) el.innerHTML += '<div>' + msg + '</div>';
+        }
+
+        // ===== DATA PELAJAR (321 ORANG) =====
+        const rawStudentData = `061130101635|ADAM DANIAL BIN AZLIM|PBKK
+050805110561|AHMAD IRFAN FIRDAUS BIN ISHAK|PBKK
+060809060070|AMIRA HUMAIRA BINTI ABDUL HALIM|PBKK
+060808080934|KIRRTIKA A/P SUBRAMANIAM|PBKK
+060817030285|MOHAMAD ASLAM BIN ABDULLAH|PBKK
+060824030291|MOHAMAD MUQHRIZ BAIHAQI BIN KAMARUZAMAN|PBKK
+060713030555|MOHAMAD NUR FIRDAUS BIN NOR RANI|PBKK
+060211020429|MOHAMMAD ALIFF AKMAL BIN ABDUL RANI|PBKK
+050115030273|MUHAMAD IKRAM MUNIF BIN MOHD RAMZI|PBKK
+061111060401|MUHAMMAD AIMAN FAHIM BIN ZILKAMA|PBKK
+051011030337|MUHAMMAD KHALID BIN NASURDIN|PBKK
+051114020764|NIK FATIMAH SYUHADAH BINTI NIK SHAHRUM|PBKK
+060426010930|NOR ALEEYA AFFIFI BT NOR AZIZI|PBKK
+060206080902|NUR AIN NASUHAH BINTI MOHAMMAD ZAMRI|PBKK
+060307020044|NUR AISYAH SALIHAH BINTI MUHD NOOR ZAHIDIN|PBKK
+060213030604|NUR AMIRAH FASIHAH BINTI KAMARUL HISAN|PBKK
+060908030184|NUR ATIRAH BINTI ISMAIL|PBKK
+060225050098|NUR HUMAIRA BINTI MOHD EFFENDY|PBKK
+060731030014|NUR NATASHA BINTI ZAID|PBKK
+050525030348|NUR SABIHAH BINTI SUKRI|PBKK
+060331050358|NUR SHAMILA ZULAIKHA BINTI NIZAMUDDIN|PBKK
+061108110594|NURIN SOFIYA QAISARA BINTI MOHAMAD SUHAIMI|PBKK
+060401030580|SYADHATUL AZWA BINTI MOHD RUSHDAN|PBKK
+051011090030|AINA HUSNI BINTI S.MAHZAR|PBKK2
+050627020394|AMNI NURLIYANA BINTI MOHD YUSRI|PBKK2
+061222060092|AZRA NUR NASHIHIN BINTI AZRAHIZAM|PBKK2
+060619011200|DURRAH DAMIA BINTI NORAZMAN|PBKK2
+060613010063|FARIS AL HAKIM BIN MOHAMMAD HAIRIL|PBKK2
+040318030418|FATIN NURSYUHADA BINTI ABU BAKAR|PBKK2
+050409010091|MUHAMMAD AFKAR IZZUDDIN BIN AZIZI|PBKK2
+060802020877|MUHAMMAD IRMAN MUALIF BIN MAZLIN|PBKK2
+060402160184|NASRIN NAZHEEFAH BINTI MUSTAFA|PBKK2
+060514080234|NUR AQILAH TAQIAH BINTI NAZARI|PBKK2
+060111030304|NUR ANIS MAISARAH BINTI RUSLIEE|PBKK2
+060103101256|NUR IZZATI ATHIRAH BINTI MOHAMAD RAFI|PBKK2
+060904030558|NURUL AKMALWIDAD BINTI ZAHABA|PBKK2
+060626020682|NURUL NUR IZZATI BINTI RAHIM|PBKK2
+061129060186|SAIDATUL HUSNA BINTI SEMAIL|PBKK2
+060924060340|SITI ROMADHAINI BINTI ABDULLAH|PBKK2
+060304060382|WAN NOR SYAFIQAH BINTI WAN ZAIHAN|PBKK2
+060411010604|AISHAH HUMAIRA BINTI MOHD KHAIRUDDIN|PBKK3
+050714130276|ARRABELLA GREASSY ANAK LINGGI|PBKK3
+060113100652|BINTULHUDA TAHIRAH BINTI AHMAD EHSAN|PBKK3
+050430060130|FARAH NAZIHA BINTI MOHD NAZIR|PBKK3
+050701070286|LUTFIAH BINTI JAMALUDIN|PBKK3
+060225101203|MOHD AQIF HARUN BIN ZULKIFLI|PBKK3
+061018012085|MUHAMMAD BIN ZABA|PBKK3
+050321050099|MUHAMMAD SYAKIR IMAN BIN MOHD RAFIZ|PBKK3
+061116030666|NORFATIN IDAYU BINTI ISMAIL|PBKK3
+060307010364|NUR AQILAH BINTI MAAT|PBKK3
+060530070036|NUR HAFIZZAH BINTI JAFRI|PBKK3
+060402160176|NURIN NAZHEERAH BINTI MUSTAFA|PBKK3
+050401080394|NURUL IZZATI BINTI ISMAIL|PBKK3
+060515040226|NURWADHIHAH BINTI RUZAIDI|PBKK3
+040329121286|ONNEY VIRTHA KUASI|PBKK3
+050104130420|RUFINA CHRISTY ANAK REYNOLD HANSLEY|PBKK3
+050626120078|SITI NOR ANISAH BINTI ACHO|PBKK3
+060123020410|SYAJARATULDUR BINTI AMIN PANAEMAH|PBKK3
+060418011597|SYED ABDUL RAHMAN SHAH BIN SHAH SYED|PBKK3
+060325110561|AHMAD AMIR MUZAKKIR BIN SAZALI|PIMK1
+061217020168|ANIS SYAMIMI BINTI ABD SAMAD|PIMK1
+061016040592|BASYIRAH BINTI AMIR|PIMK1
+061218140639|CHE WAN SYAZWAN ISKANDAR BIN CIK WAN SHAHAR|PIMK1
+060624030123|HAZIQ NAQIUDDIN BIN NUR AZMAN DIRKHAN|PIMK1
+060715080249|IRFAN FITRI BIN ISHAK|PIMK1
+060215011116|KHAIRUN NAZURAH BINTI KHAHARUDIN|PIMK1
+060128040066|MARYAM SYAFIQAH BINTI MOHD ARIF|PIMK1
+061227011521|MUHAMMAD DANISH IRFAN BIN MOHAMAD ROFI|PIMK1
+060930050405|MUHAMMAD ILHAM MUJAHID BIN ABDUL HADI|PIMK1
+060710110197|MUHAMMAD MUIZUDDIN BIN ROSLI|PIMK1
+060410010223|MUHAMMAD NAQIYUDDIN BIN SELAMAT|PIMK1
+050408040061|MUHAMMAD SOLLEHIN BIN SULAIMAN|PIMK1
+061214020138|MUNIRAH BINTI YUSOF|PIMK1
+061202040094|NUR AIN FATIHA BINTI MUHAMAD FAIZAL|PIMK1
+061021020238|NUR AINA QISTINA BINTI MOHD YUSRI|PIMK1
+040714010902|NUR ALIA FARHANA BINTI MOHAMMED YAZID|PIMK1
+060527080276|NUR AQILAH BATRISYIA BT ROMZE|PIMK1
+060814040306|NUR KHADEJA SOFEA BINTI AHMAD FAIS|PIMK1
+060305010686|NUR SYAHIRAH BINTI NORDIN|PIMK1
+060112101872|NURIN ALIYA ZULFA BINTI MOHD HUSNI TAMRIN|PIMK1
+060718020508|NURUL SYAHIDAH BINTI MD ROBE|PIMK1
+060117040028|SHARIFAH BUSHRA BINTI SYED ABD HALIM|PIMK1
+060819020072|SITI MAISARAH BINTI MOHD TARMIZI|PIMK1
+060915101614|UZMA SAFFIYAH BINTI AHMAD ARPANI|PIMK1
+060314031147|AHMAD HABIBUL RAHMAN BIN MUHAMMAD|PIMK2
+060425140282|AN NUR NABILA BINTI KAMARUL BAHARI|PIMK2
+050705011208|ANNATI DAMIA BINTI KHAIRUL FAUZI|PIMK2
+060608081019|HAFIZ ASLAM BIN MOHD SAIFOL|PIMK2
+060109020318|IQLIMA NATALIA BINTI MOHAMAD ASRI|PIMK2
+061120030394|MIA DHALIA AYUNI BINTI MOHD AZIZI|PIMK2
+051104100779|MUHAMMAD AMIRUL FITRI BIN SHAHRUL EFFENDI|PIMK2
+061207040157|MUHAMMAD FAHMI FIKRI BIN NAZARUDIN|PIMK2
+060527040119|MUHAMMAD IRFAN HUSAINI BIN MOHD AZMI|PIMK2
+060526110357|MUHAMMAD NAJMI BIN HANAFIAH|PIMK2
+060316040063|MUHAMMAD RIDHAUDDIN SYAUQI BIN RIWAN|PIMK2
+051207010469|MUHAMMAD ZIKRI ZAKWAN BIN ZULKFALE|PIMK2
+050514070432|NORASHIQIN BINTI SHUKOR|PIMK2
+060406050038|NUR AIREEN SHIRLEYZA BINTI NAZRI|PIMK2
+050812110244|NUR AMIRAH WAJIHAH BINTI SULAIMAN|PIMK2
+050419110256|NUR IMANI NAZIFA BINTI AHMAD KAMEL|PIMK2
+051030020644|NUR SAKINA BINTI JAMALUDIN|PIMK2
+050526010912|NURAMALINA BINTI SHARIN|PIMK2
+060814050192|NURIN DAMIA BINTI MOHD YUSDERMAN|PIMK2
+060325100478|NURUL FARZANA BT ABU BAKAR|PIMK2
+050511011592|REEHA SYIFA BINTI MOHD KAMIL|PIMK2
+060703140312|SITI IZZAH HAZIQAH BINTI AMILIN|PIMK2
+060608120794|SYAHIDATUL FAKHRIAH BINTI JUSIP|PIMK2
+060301110196|WAN NUR AQILAH BINTI W RUSDI|PIMK2
+060706142030|AIN ZULFA BINTI MOHD DZAFER|BAMB
+060519101014|ALYA AFIQAH BINTI HAMDAN HAMIDIN|BAMB
+060315020044|ALYAA SYAMIMI BINTI AHMAD SHAHIR|BAMB
+061101020510|HANAH QASRINA BINTI HAMINIZAM|BAMB
+060717100485|HAZIM SYAMIL BIN HASHIM|BAMB
+050915160092|INTAN DIYANA BATRISYIA AZMI|BAMB
+060913101645|MUHAMMAD AIZAT BIN ABDUL RAHMAN|BAMB
+061217160021|MUHAMMAD HAZIQ BIN MOHD HATA|BAMB
+060103020413|MUHAMMAD IRFAN BIN MOHD FADZIL|BAMB
+060527011027|MUHAMMAD IZZ DANISH BIN MD FAIZAL|BAMB
+060312020655|MUHAMMAD NASRIZAL BIN MOHD NAZRUN|BAMB
+060417010517|MUHAMMAD SHARIFUDDIN BIN MOHAMAD ZAHID|BAMB
+060322110056|NABILAH HUSNA BINTI ABDUL RAZAK|BAMB
+060528030748|NOOR NAJIHAH BINTI RUSLI|BAMB
+061231030338|NOR AMIRA AFIZA BINTI AHMAD|BAMB
+060403110154|NUR BALQIS SYUHADA BINTI NOR RASID|BAMB
+050908160166|QURRATUL AIN BINTI ABDUL MUTHALID|BAMB
+060826070182|SITI AMIRAH MAISARAH BINTI SAMIUN|BAMB
+060207110448|SITI FATIMAH NURSAKEENAH BINTI AWIN ZUBIR|BAMB
+060213101054|SITI HAJAR BINTI MOHAMMAD HALIL|BAMB
+060620060026|SUMAYYAH BINTI MOHD RAZIS|BAMB
+040805141377|AHMAD ADIB FAUZAN BIN MOHAMAD|PKBK
+060825020765|MOHAMAD MUHAIMIN BIN MOHAMMAD ISRAF|PKBK
+060629140313|MUHAMMAD AQIL FARHAN BIN MOHD HAFEZ|PKBK
+060407140043|MUHAMMAD ARIF BIN KAMALUDIN|PKBK
+060930011035|MUHAMMAD HAIQAL HAZIM BIN ROZAIDI|PKBK
+060502110539|MUHAMMAD HAZIM BIN ZAINUDIN|PKBK
+050828020075|MUHAMMAD IZZAT BIN ABDUL RAHIM|PKBK
+051212080883|MUHAMMAD IZZUDDIN BIN MOHAMMAD IBRAHIM|PKBK
+050828110679|MUHAMMAD RAFIQIE BIN ZAINUDDIN|PKBK
+060104020327|MUHAMMAD RIZQ AZFAR BIN MUHAMMAD SHAKIR|PKBK
+061213010683|MUHAMMAD SYAHMI BIN SAADON|PKBK
+060905060556|NAJIHAH BINTI MOHD ALI HANAFIAH|PKBK
+061223080052|NAZRAN ALYA IMANINA BINTI KHUSZAERAN|PKBK
+060901140081|NIK ADAM HAIKAL BIN MOHD SHARDI|PKBK
+050428020092|NUR DANIA MUKTAZZAH BINTI DAUD ISMAT|PKBK
+061006070114|NUR INSYIRAH BINTI MOHD FAZERI|PKBK
+060605010354|NUR IZZA ELLYSYA BINTI RAZALI|PKBK
+051219110168|NUR IZZATI BINTI KHAIRUL AZMI|PKBK
+060409060418|NUR JANNATUL AIN BINTI CHE KU ABU BAKAR|PKBK
+060220040376|NURUL AIN IZZATI BINTI MOHD NOR|PKBK
+060619080134|NURUL IZZAH BINTI MOHAMMAD YUSOFF|PKBK
+060509070453|AHMAD SALIHIN BIN TAUFEK|BMMB1
+060214020918|AINAA SYAFIAH BINTI MOHD NAZIR|BMMB1
+060215160138|AMIRAH NUR DIYANA BINTI MOHD NASIR|BMMB1
+050612060027|ASRUL HAKIMI BIN AZAHA|BMMB1
+060906080698|DIANA ASIFFA ZAHARAH BINTI ASMADI|BMMB1
+060120070260|FARAH QASDINA BINTI MOHD FOUDZI|BMMB1
+051108070247|FARIS ZAKWAN BIN FADLI|BMMB1
+050427080341|MOHAMAD HAFIZI BIN MOHD RADZI|BMMB1
+050904050349|MUHAMMAD AIMAN HAZIMI BIN ARMAN|BMMB1
+061030090035|MUHAMMAD FARISH AMMAR BIN MOHAMMAD TARMIZI|BMMB1
+050427030205|MUHAMMAD IKRAM HAZIQ BIN MOKHTAR|BMMB1
+060821080023|MUHAMMAD SAFWAN BIN SULAIMAN|BMMB1
+061005090041|MUHAMMAD ZUFAR BIN ZULKEFLY|BMMB1
+060915020232|NUHA NUR INSYIRAH BINTI ASYRAN|BMMB1
+060129010918|NUR ADREANNA YASMIN BINTI MOHAMMAD YAKIN|BMMB1
+060905020044|NUR AINA FAQIHAH BINTI MOHD SHAHRIL|BMMB1
+050805090054|NUR AMANI BINTI IDRUS|BMMB1
+041226080092|NUR ATIQAH BINTI ISMAIL|BMMB1
+051107081438|NUR BATRISHYA BINTI IBRAHIM|BMMB1
+061030020280|NUR IZZATUL SYAMIRA BINTI AHMAD SOBRI|BMMB1
+060419080586|NUR RABIATUL ADAWIYAH BINTI AHMAD ROZAIN|BMMB1
+060812030286|NUR SYUKRINA BINTI MOHAMED SUHAIDI|BMMB1
+061223040210|NURUL SUQHAINA BINTI AZADI|BMMB1
+061025090110|SAFIAH NUR NABIHAH BINTI MOHD SHUKUR|BMMB1
+060704020822|UMMU AINUL MAWADDAH MAISARAH BINTI RAMLAN|BMMB1
+060725060364|AISYAH WADHIHAH BINTI MOHD SIBEE|BMMB2
+061214020234|ALNUR QISTINA BINTI OSMAN|BMMB2
+061009020956|BATRIESYA NURINTISARAH BINTI NOR HISYAM|BMMB2
+060511060561|CHE WAN AMIRUL HISHAM BIN CHE WAN AZIZAN|BMMB2
+050611150012|EDENIA ESTHER TINGGANG|BMMB2
+060519021209|KHISVENN BASKARAN|BMMB2
+060627090084|KU NASHRAH BINTI KU NASIR|BMMB2
+060118080435|MOHAMAD IKMAL HARIS BIN SHARUDDIN|BMMB2
+050216060033|MUHAMMAD AKMAL FITRI BIN MOHD ZAKARIA|BMMB2
+050118010673|MUHAMMAD HAFIZ BIN MOHD AZILAH|BMMB2
+050401040405|MUHAMMAD IMAN FIKRI BIN MOHD POWZEN|BMMB2
+060316080321|MUHAMMAD SHAH BIN MOHAMAN HAMIDI|BMMB2
+060123080560|NUQMA ZARQA BINTI AZHAR|BMMB2
+050416081090|NUR AIN SHAHIDA BINTI KHAMIS|BMMB2
+060808070314|NUR ALISYA YASMIN BINTI MUHAMAD SHAHRIL|BMMB2
+060521040126|NUR AMIRAH SYAHIRAH BINTI MOHD NIZAM|BMMB2
+050103110292|NUR LIYANA SYUKRINA BINTI CHE MOHD PADLI|BMMB2
+060614020458|NUR SARAH NAJWA BINTI ISHAK|BMMB2
+061003110352|NURUL ALYA SYAIRAH BINTI AMRUL|BMMB2
+041029050038|PUTRI NUR NAZATHUL BALQIS BINTI MOHD IRWAN|BMMB2
+060522081069|RAJA MUHAMMAD AHSAN BIN RAJA ABDUL HASSAN|BMMB2
+060524080270|SARAH KHADIJAH BINTI FAHRURRAZI|BMMB2
+060227030824|WAN NUR MAISYARAH BINTI WAN ZAKARIA|BMMB2
+061012100498|AMIRA FARHANA BINTI RUSLAN|BMMB3
+061015020637|ARIF SAZMI BIN ABU KASIM|BMMB3
+060810021220|BATRISYA BALQIS BINTI MOHD ROSDI|BMMB3
+061203020167|DANIAL ISKANDAR ARIFF BIN HARIFUDIN|BMMB3
+060707101708|FARAH NABILAH BINTI JEFRI|BMMB3
+060916110053|LUQMANUL HAKIM BIN KHAIRUDIN|BMMB3
+060218110355|MUHAMMAD AFIQ LUQMAN BIN SUHAIMI|BMMB3
+061213140381|MUHAMMAD DINIE HILMIE BIN RAMLAN|BMMB3
+060403060417|MUHAMMAD HAZRAN BIN ABU HASSAN ASAHARI|BMMB3
+060927090027|MUHAMMAD IRFAN BIN HADI|BMMB3
+060427081001|MUHAMMAD SYAKIR BIN HARMI|BMMB3
+060522060014|NOR ADRIANA BINTI MOHAMAD NIZAM|BMMB3
+041115110236|NUR ADESA FARZANA BINTI ADENAN|BMMB3
+060316020820|NUR AINA BATRISYIA BINTI KHAIRUDIN|BMMB3
+060814060278|NUR ALYAA SYAFIQAH BINTI SHAHARUL MIZAN|BMMB3
+060803031084|NUR ATHIRAH BINTI MOHD SUHAIMY|BMMB3
+061004031058|NUR IFFAH BINTI ABD RAHMAN|BMMB3
+050519011108|NUR INSYIRAH BINTI AMRUL|BMMB3
+050629020320|NUR NAJLA NASUHA BINTI MOHAMAD NASIR|BMMB3
+061225020598|NUR SYAKILA BINTI MAZLAN|BMMB3
+060805080154|NURUL NADIA NAJWA BINTI ABDUL HAMID|BMMB3
+060102020016|RABIATUL ADAWIYAH BINTI ZULKEFLY|BMMB3
+050120020694|SARAH LIYANA BINTI MOHD RAZI|BMMB3
+060607110025|WAN IZZAT DARIMI BIN WAN SHAMSI|BMMB3
+051203100344|AINAA NAJIHAH BINTI MOHD HELMI|BMMB4
+050527020979|AQIL NAQIUDDIN BIN KHAIRUL ANUAR|BMMB4
+051226020611|ITMAM SHATRI BIN MOHAMAD RADZI|BMMB4
+051217070377|KU SAIFUDDIN BIN KU ANUAR|BMMB4
+050909121011|LEONG CHUN YEIK NOEL|BMMB4
+050801080879|MOHAMAD SUFIZAM BIN SALLEH|BMMB4
+050811120571|MOHAMMAD RUHULLAH JIHADI BIN MAKSUM|BMMB4
+051123080363|MUHAMMAD AFIEQ BIN MOHD RIDZUAN|BMMB4
+051124080795|MUHAMMAD AIDIL NAZHAN BIN ABDULLAH|BMMB4
+041122020693|MUHAMMAD ASYRAF BIN MOHAMAD AZAMAN|BMMB4
+051109020479|MUHAMMAD DANIAL IKHLAS BIN MAHADHIR|BMMB4
+050424020589|MUHAMMAD NAJMIL AIMAN BIN NORDIN|BMMB4
+050911021167|MUHAMMAD UZZAIR BIN AZHAR|BMMB4
+040923080958|NAJWA FARHANA BINTI MAHMUD PADZIL|BMMB4
+051021090034|NUR AUNI NABILA BINTI MOHAMMAD FOZI|BMMB4
+040410080688|NUR HIDAYATI NATASHA BINTI ABU HASSAN SHAARI|BMMB4
+050117020060|NURUL AIN IZZATY BINTI MOHD SHUKRI|BMMB4
+050314080708|NURUL AINNA BINTI ZULKANAEN|BMMB4
+050703020362|NURUL ASYIKIN BINTI OSMAN|BMMB4
+050806020218|NURUL LATIFAH BINTI RAZALI|BMMB4
+051209080882|PUTRI NURAIN BINTI INDERA ISKANDAR|BMMB4
+050602080550|SITI NUR AMIRAH FAQIHAH BINTI MOHD RAZALLI|BMMB4
+040906020064|SITI SUMAIYAH BINTI YAHYA|BMMB4
+050318020892|NUR QURRATUL AFISHA BINTI YUSNI|BMMB4
+050814020218|ADIBAH SYASYA BINTI MAT ZUKI|BMMB5
+051206040068|ANDRE TAN|BMMB5
+050908081396|AU MAN YU|BMMB5
+040416120556|CHISDAYATI CHU JIE TIAN|BMMB5
+050126130966|CHONG JIN YEE|BMMB5
+050423010071|CHONG KAI YU|BMMB5
+050623130342|DIANA EWEE|BMMB5
+050219130834|ELLY KUAN SIAW WUI|BMMB5
+050421130504|ESTHER DAYUN ANAK SAGING|BMMB5
+051015130730|JANICE AU AI YUNG|BMMB5
+050120131060|JEE JAP EN|BMMB5
+040814030054|KHENG SZE YEN|BMMB5
+050320030133|KOH LIANG JIE|BMMB5
+050923020532|LOW YU ZHE|BMMB5
+051115110235|MUHAMMAD HAZRIL AZIM BIN MOHD FAUDZI|BMMB5
+050123010045|MUHAMMAD MUQRI BIN MOHD JIZAD|BMMB5
+050729030518|NUR ADILLA HUSNA BINTI OMAR|BMMB5
+050405011206|NUR ARIFAH SYAZWANI BINTI SAMSURI|BMMB5
+050827020612|NUR DAMIA DANIESHA BINTI MOHAMAD ROSLAN|BMMB5
+051119020464|ONG JING JUN|BMMB5
+050613070366|OOI JIE YEE|BMMB5
+051027110606|ROHADATUL AISY BINTI AHMAD WARIDI|BMMB5
+050321030629|TAN WEI SHEN|BMMB5
+050211140202|YEOH JIA WEN|BMMB5
+060606020546|AINUN SYAFIQAH BINTI MUSLIM|TSLB1
+060805110659|ALIF ZAREEF BIN ZURAIMY|TSLB1
+061207020180|ALYA BATRISYIA BINTI MASNAWI|TSLB1
+060816020536|ANIS NURIL AISYAH BINTI MOHAMAD NABZHAM|TSLB1
+060610030720|DALIA QISTINA ADANI BINTI GHAZALI|TSLB1
+050622020854|EZZATUL UMAIRAH IMANI BINTI MOHD HADAFI|TSLB1
+061001090060|FATIHAH NAJLA BINTI MOHAMAD FOUDZI|TSLB1
+060823030978|HAIFA SORFINA BINTI HASNI|TSLB1
+060626080079|KHALISH IRFAN BIN KHAIRUL AZMAN|TSLB1
+061114060677|MUHAMMAD ANIQ BIN MOHAMAD YUSOP|TSLB1
+050823100375|MUHAMMAD HANIF BIN MD HILMY|TSLB1
+061222080632|MUNIRAH BINTI ABU|TSLB1
+060514020522|NAZURAH BINTI AHMAD RODZI|TSLB1
+060519020572|NUR ALEEFA ALYA BINTI JAMIL|TSLB1
+060807070072|NUR FARAH SHAZANANNY BINTI SHARUL NISHAM|TSLB1
+060930020310|NUR HAFIZAH BINTI MOHD DIAH|TSLB1
+060704030246|NUR HANNAH ZAFIRAH BINTI ZULKIFLEY|TSLB1
+060606020626|NUR ISLAH BATRISYIA BINTI ISMAIL|TSLB1
+060806060278|NUR SAKINAH BINTI BENYAMIN|TSLB1
+061112020110|NURFARHAH MUNIRAH BINTI MOHAMAD|TSLB1
+060905020060|NURIN NAJLA DAMIA BINTI MD AMIN HAMZAS|TSLB1
+060525020544|NURUL SOFEA BINTI MOHD FAUZI|TSLB1
+060405020072|PUTERI QISTINA BATRISYIA BINTI MOHD ROHAIZAN|TSLB1
+060703021006|SAYYIDATUN NISAK BINTI MOHAMAD GHAZALI|TSLB1
+060623020644|SITI MARDHIYAH BINTI FADZIL|TSLB1
+061109160024|SYIFAA BINTI SHARI|TSLB1
+060916140674|AINA SHAFIQAH BINTI MUHAMAD SUHAIMI|TSLB2
+061117020726|ALEEHA BINTI MUBASHIR HUSSAIN|TSLB2
+060827020646|AMAL SUFINA BINTI MOHAMAD SHAHAR|TSLB2
+061121020059|ARMAN DANI BIN NOHHA|TSLB2
+060325020312|ELYA NAZLEEN NURNAZIFA BINTI NAZRI|TSLB2
+060318020664|FATHINAH ALIYA BINTI MOHAMAD BADRI|TSLB2
+061011020023|MUHAMMAD AFIF IRFAN BIN SHARIFUL AZMI|TSLB2
+060903030441|MUHAMMAD EMIL MUKHRIZ BIN MOHAMMAD AZLI|TSLB2
+060722030813|MUHAMMAD FADHLAN BIN MOHD ZAIN|TSLB2
+060614020175|MUHAMMAD HAZEEM BIN AHMAD SHUKRI|TSLB2
+060627010785|MUHAMMAD SYABIL ARIQ BIN MOHD SAHARIN|TSLB2
+060821030026|NAJLA AFIFAH BINTI MUHAMAD FADZLI|TSLB2
+061228030636|NUR AISYAH AQILAH BINTI AHMAD FADHLI|TSLB2
+061226020450|NUR ERDINA ZULAIKHA BINTI MOHD ERHAN|TSLB2
+050308020442|NUR FAREZA BINTI AZHAR|TSLB2
+061027010612|NUR HANIE NAJLA BINTI MD NAZER|TSLB2
+060331020802|NUR HIJRATUN AINA BINTI ISMAIL|TSLB2
+060922020230|NUR IZYAN BINTI ISMAIL|TSLB2
+060110110038|NUR KHAIRUN SAFIYYA BINTI MOHD KHAIRUDDIN|TSLB2
+061010080112|NURIFFAH BINTI ABDUL WAHAB|TSLB2
+060911031006|NURUL AINA SYADIYA BINTI ZUBIR|TSLB2
+061015020098|NURZIHAN BINTI RIDUAN|TSLB2
+061026020210|QHAIRAATUN HISAAN BINTI ZAMZURAIDI|TSLB2
+061216110372|SITI ARISYA BINTI MD NOOR|TSLB2
+050612020228|SITI NUR KHADIJAH BINTI AHMAD PUAD|TSLB2`;
+
+        const STUDENTS = {};
+        rawStudentData.trim().split('\n').forEach(line => {
+            const parts = line.split('|');
+            if (parts.length === 3) {
+                STUDENTS[parts[0].trim()] = { name: parts[1].trim(), class: parts[2].trim() };
+            }
+        });
+
+        // ===== 78 KELAB & PERSATUAN (SPI KPM) + UNIFORM + SUKAN =====
+        const ACTIVITIES = [
+            // ===== BAHASA (Akademik) =====
+            { name: "Persatuan Bahasa Arab", cat: "akademik" },
+            { name: "Persatuan Bahasa Cina", cat: "akademik" },
+            { name: "Persatuan Bahasa dan Kesusasteraan", cat: "akademik" },
+            { name: "Persatuan Bahasa Iban", cat: "akademik" },
+            { name: "Persatuan Bahasa Inggeris", cat: "akademik" },
+            { name: "Persatuan Bahasa Jepun", cat: "akademik" },
+            { name: "Persatuan Bahasa Jerman", cat: "akademik" },
+            { name: "Persatuan Bahasa Kadazan", cat: "akademik" },
+            { name: "Persatuan Bahasa Korea", cat: "akademik" },
+            { name: "Persatuan Bahasa Melayu", cat: "akademik" },
+            { name: "Persatuan Bahasa Perancis", cat: "akademik" },
+            { name: "Persatuan Bahasa Tamil", cat: "akademik" },
+            { name: "Kelab Lukisan Kejuruteraan", cat: "akademik" },
+            
+            // ===== STEM DAN TVE (Akademik) =====
+            { name: "Kelab STEM/Solar", cat: "akademik" },
+            { name: "Kelab Astronomi/Falak", cat: "akademik" },
+            { name: "Kelab Avionik", cat: "akademik" },
+            { name: "Kelab Cyber Kids", cat: "akademik" },
+            { name: "Kelab F1 in School", cat: "akademik" },
+            { name: "Kelab Inovasi/Reka Cipta", cat: "akademik" },
+            { name: "Kelab Komputer/ICT", cat: "akademik" },
+            { name: "Kelab Remaja Udara", cat: "akademik" },
+            { name: "Kelab Robotik", cat: "akademik" },
+            { name: "Kelab Fotonik", cat: "akademik" },
+            { name: "Kelab Juru Ukur", cat: "akademik" },
+            { name: "Kelab Pembinaan CIDB", cat: "akademik" },
+            { name: "Persatuan Geografi", cat: "akademik" },
+            { name: "Persatuan Pertanian", cat: "akademik" },
+            { name: "Persatuan Sejarah", cat: "akademik" },
+            { name: "Kelab Sivik/Moral", cat: "akademik" },
+            { name: "Persatuan Tingkatan 6", cat: "akademik" },
+            
+            // ===== SAINS SOSIAL (Akademik) =====
+            { name: "Kelab Kepimpinan", cat: "akademik" },
+            { name: "Kelab Keselamatan Jalan Raya", cat: "akademik" },
+            { name: "Kelab Kesihatan", cat: "akademik" },
+            { name: "Kelab Pelancongan", cat: "akademik" },
+            { name: "Kelab Pencegahan Jenayah", cat: "akademik" },
+            { name: "Kelab Pengguna", cat: "akademik" },
+            { name: "Kelab Sains Kemasyarakatan", cat: "akademik" },
+            
+            // ===== KEAGAMAAN (Akademik) =====
+            { name: "Kelab Kemahiran Al-Quran/Hafazan", cat: "akademik" },
+            { name: "Kelab Tarannum dan Qiraat", cat: "akademik" },
+            { name: "Kelab Agama Buddha", cat: "akademik" },
+            { name: "Kelab Agama Hindu", cat: "akademik" },
+            { name: "Persatuan Agama Islam", cat: "akademik" },
+            { name: "Kelab Agama Kristian", cat: "akademik" },
+            { name: "Kelab Ulul Albab", cat: "akademik" },
+            
+            // ===== KENEGARAAN (Akademik) =====
+            { name: "Kelab Malaysiaku", cat: "akademik" },
+            { name: "Kelab Perpaduan", cat: "akademik" },
+            { name: "Kelab Rukun Negara", cat: "akademik" },
+            
+            // ===== KERJAYA (Kelab) =====
+            { name: "Kelab Doktor Muda", cat: "kelab" },
+            { name: "Kelab Fotografi", cat: "kelab" },
+            { name: "Kelab Juruterbang", cat: "kelab" },
+            { name: "Kelab Katering", cat: "kelab" },
+            { name: "Kelab Kerjaya", cat: "kelab" },
+            { name: "Kelab Pemimpin Muda Sukan", cat: "kelab" },
+            
+            // ===== KEBAJIKAN DAN HOBI (Kelab) =====
+            { name: "Kelab Audio Visual", cat: "kelab" },
+            { name: "Kelab Filateli (Kumpul Setem)", cat: "kelab" },
+            { name: "Kelab Interact/Leo/Rotary", cat: "kelab" },
+            { name: "Kelab Joran", cat: "kelab" },
+            { name: "Kelab Numesmatik (Kumpul Syiling)", cat: "kelab" },
+            { name: "Kelab UNESCO", cat: "kelab" },
+            { name: "Kelab Kembara", cat: "kelab" },
+            
+            // ===== ALAM SEKITAR (Kelab) =====
+            { name: "Kelab Skim Pinjaman Buku Teks", cat: "kelab" },
+            { name: "Kelab Rakan Muda", cat: "kelab" },
+            { name: "Kelab Alam Sekitar", cat: "kelab" },
+            { name: "Kelab Keceriaan/Landskap", cat: "kelab" },
+            { name: "Kelab Kitar Semula", cat: "kelab" },
+            { name: "Kelab Briged Sungai", cat: "kelab" },
+            
+            // ===== KESENIAN (Kelab) =====
+            { name: "Kelab Seni Muzik", cat: "kelab" },
+            { name: "Kelab Seni Tari", cat: "kelab" },
+            { name: "Kelab Seni Teater", cat: "kelab" },
+            { name: "Kelab Seni Visual", cat: "kelab" },
+            
+            // ===== KEUSAHAWANAN (Kelab) =====
+            { name: "Kelab Pelaburan Bijak PNB", cat: "kelab" },
+            { name: "Kelab Perdagangan", cat: "kelab" },
+            { name: "Kelab Ekonomi", cat: "kelab" },
+            { name: "Kelab Leaderonomics", cat: "kelab" },
+            { name: "Koperasi Sekolah", cat: "kelab" },
+            { name: "Kelab Usahawan Muda/Tunas Niaga", cat: "kelab" },
+            { name: "Kelab Akaun", cat: "kelab" },
+            { name: "Kelab Kewangan", cat: "kelab" },
+            
+            // ===== BADAN BERUNIFORM =====
+            { name: "Pengakap", cat: "uniform" },
+            { name: "Pandu Puteri", cat: "uniform" },
+            { name: "Kadet Remaja Sekolah (KRS)", cat: "uniform" },
+            { name: "Pasukan Kadet Polis", cat: "uniform" },
+            { name: "Pasukan Kadet Bomba", cat: "uniform" },
+            { name: "Pasukan Kadet Tentera", cat: "uniform" },
+            { name: "Puteri Islam", cat: "uniform" },
+            { name: "Bulan Sabit Merah", cat: "uniform" },
+            { name: "Pasukan Pancaragam", cat: "uniform" },
+            { name: "Taekwondo", cat: "uniform" },
+            { name: "Silat", cat: "uniform" },
+            
+            // ===== SUKAN DAN PERMAINAN =====
+            { name: "Bola Sepak", cat: "sukan" },
+            { name: "Badminton", cat: "sukan" },
+            { name: "Sepak Takraw", cat: "sukan" },
+            { name: "Bola Jaring", cat: "sukan" },
+            { name: "Bola Keranjang", cat: "sukan" },
+            { name: "Bola Tampar", cat: "sukan" },
+            { name: "Hoki", cat: "sukan" },
+            { name: "Kriket", cat: "sukan" },
+            { name: "Olahraga", cat: "sukan" },
+            { name: "Renang", cat: "sukan" },
+            { name: "Bola Baling", cat: "sukan" }
+        ];
+
+        document.getElementById('debugCount').textContent = Object.keys(STUDENTS).length;
+        document.getElementById('debugItems').textContent = ACTIVITIES.length;
+        document.getElementById('totalItems').textContent = ACTIVITIES.length;
+
+        let currentStudent = null;
+        let placed = { akademik: [], kelab: [], uniform: [], sukan: [] };
+        let startTime = null;
+        let attempts = JSON.parse(localStorage.getItem('kpm_kk_78') || '{}');
+
+        function enterFS() {
+            const el = document.documentElement;
+            if (el.requestFullscreen) el.requestFullscreen();
+            else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            if (document.getElementById('activityScr').classList.contains('active') && !document.fullscreenElement) {
+                document.getElementById('fsWarning').classList.add('show');
+            } else {
+                document.getElementById('fsWarning').classList.remove('show');
+            }
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const input = document.getElementById('inputKP').value.trim().replace(/\D/g, '');
+            const student = STUDENTS[input];
+            if (!student) {
+                alert('No. KP tidak dijumpai dalam sistem.');
+                return;
+            }
+            if (attempts[input]) {
+                alert('Anda telah menjawab aktiviti ini.');
+                return;
+            }
+            currentStudent = { id: input, name: student.name, class: student.class };
+            startActivity();
+        });
+
+        function startActivity() {
+            enterFS();
+            document.getElementById('loginScr').classList.remove('active');
+            document.getElementById('activityScr').classList.add('active');
+            document.getElementById('sName').textContent = currentStudent.name;
+            document.getElementById('sClass').textContent = currentStudent.class;
+            startTime = Date.now();
+            initItems();
+        }
+
+        function initItems() {
+            const box = document.getElementById('itemsBox');
+            const shuffled = [...ACTIVITIES].sort(() => Math.random() - 0.5);
+            box.innerHTML = shuffled.map(a => `<div class="draggable" draggable="true" data-name="${a.name}" data-cat="${a.cat}">${a.name}</div>`).join('');
+            setupDnD();
+        }
+
+        function setupDnD() {
+            document.querySelectorAll('.draggable').forEach(item => {
+                item.addEventListener('dragstart', function(e) {
+                    this.classList.add('dragging');
+                    e.dataTransfer.setData('text', this.dataset.name);
+                });
+                item.addEventListener('dragend', function() {
+                    this.classList.remove('dragging');
+                    document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('drag-over'));
+                });
+            });
+
+            document.querySelectorAll('.zone-items').forEach(zone => {
+                zone.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.closest('.drop-zone').classList.add('drag-over');
+                });
+                zone.addEventListener('dragleave', function() {
+                    this.closest('.drop-zone').classList.remove('drag-over');
+                });
+                zone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.closest('.drop-zone').classList.remove('drag-over');
+                    const name = e.dataTransfer.getData('text');
+                    const dragged = document.querySelector(`.draggable[data-name="${name}"]`);
+                    if (!dragged) return;
+                    
+                    const correctCat = dragged.dataset.cat;
+                    const targetCat = this.dataset.cat;
+                    
+                    dragged.remove();
+                    const placedItem = document.createElement('div');
+                    placedItem.className = 'draggable placed ' + (correctCat === targetCat ? 'correct' : 'wrong');
+                    placedItem.textContent = name;
+                    this.appendChild(placedItem);
+                    
+                    placed[targetCat].push({ name, correct: correctCat === targetCat });
+                    updateProgress();
+                });
+            });
+        }
+
+        function updateProgress() {
+            const total = Object.values(placed).flat().length;
+            const pct = (total / ACTIVITIES.length) * 100;
+            document.getElementById('progNum').textContent = total;
+            document.getElementById('progBar').style.width = pct + '%';
+            document.getElementById('remainCount').textContent = ACTIVITIES.length - total;
+            
+            document.querySelectorAll('.drop-zone').forEach(z => {
+                z.querySelector('.cnt').textContent = placed[z.dataset.cat].length;
+            });
+            
+            document.getElementById('submitBtn').disabled = total !== ACTIVITIES.length;
+        }
+
+        document.getElementById('submitBtn').addEventListener('click', function() {
+            let correct = 0, wrong = 0;
+            Object.values(placed).forEach(arr => arr.forEach(i => i.correct ? correct++ : wrong++));
+            
+            const dur = Math.round((Date.now() - startTime) / 1000);
+            const mins = Math.floor(dur / 60);
+            const secs = dur % 60;
+            const pct = Math.round((correct / ACTIVITIES.length) * 100);
+            
+            attempts[currentStudent.id] = { correct, wrong, dur };
+            localStorage.setItem('kpm_kk_78', JSON.stringify(attempts));
+            
+            document.getElementById('activityScr').classList.remove('active');
+            document.getElementById('resultScr').classList.add('active');
+            
+            document.getElementById('scoreNum').textContent = correct;
+            document.getElementById('cCount').textContent = correct;
+            document.getElementById('iCount').textContent = wrong;
+            document.getElementById('sCount').textContent = ACTIVITIES.length - correct - wrong;
+            document.getElementById('scorePct').textContent = pct + '% markah';
+            document.getElementById('rName').textContent = currentStudent.name;
+            document.getElementById('rClass').textContent = currentStudent.class;
+            document.getElementById('rTime').textContent = mins + ' min ' + secs + ' saat';
+            
+            setTimeout(() => {
+                document.getElementById('scoreCircle').style.background = `conic-gradient(var(--green) ${pct * 3.6}deg, var(--border) 0deg)`;
+            }, 100);
+            
+            let msg = pct >= 80 ? 'Cemerlang!' : pct >= 60 ? 'Bagus!' : pct >= 40 ? 'Cuba lagi.' : 'Perlu ulang kaji.';
+            document.getElementById('scoreMsg').textContent = msg;
+            
+            history.pushState(null, '', location.href);
+        });
+
+        window.addEventListener('popstate', () => history.pushState(null, '', location.href));
+    </script>
+</body>
+</html>
