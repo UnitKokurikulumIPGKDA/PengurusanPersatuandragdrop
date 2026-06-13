@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aktiviti Kokurikulum - SPI KPM</title>
+    <title>Pembelajaran Kendiri/Independent Learning</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
     <style>
@@ -163,10 +163,11 @@
             gap: 0.25rem;
         }
         
+        /* Fullscreen Warning dengan Animasi */
         .fullscreen-warning {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.95);
+            background: rgba(0,0,0,0.97);
             display: none;
             align-items: center;
             justify-content: center;
@@ -176,6 +177,57 @@
         }
         .fullscreen-warning.show { display: flex; }
         
+        .warning-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            animation: pulse 1.5s infinite;
+        }
+        .warning-icon.warning { background: rgba(245,158,11,0.2); }
+        .warning-icon.danger { background: rgba(239,68,68,0.2); }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .exit-counter {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+        .exit-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--border);
+            transition: all 0.3s;
+        }
+        .exit-dot.active { background: var(--red); }
+        .exit-dot.warning { background: var(--amber); }
+        
+        .warning-text {
+            color: var(--amber);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .danger-text {
+            color: var(--red);
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            animation: flash 0.5s infinite;
+        }
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
         @media (max-width: 768px) {
             .items-grid { grid-template-columns: 1fr; }
             .zone-content { max-height: 120px; }
@@ -183,13 +235,34 @@
     </style>
 </head>
 <body>
+    <!-- Fullscreen Warning -->
     <div class="fullscreen-warning" id="fsWarning">
-        <div>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" style="margin:0 auto 0.75rem">
-                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
-            </svg>
-            <h2 style="margin-bottom:0.4rem;font-size:1.1rem">Kekal dalam Skrin Penuh</h2>
-            <button class="btn" style="width:auto;padding:0.5rem 1.25rem;margin-top:0.75rem" onclick="enterFS()">Kembali</button>
+        <div style="max-width:340px">
+            <div class="warning-icon" id="warningIcon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+            </div>
+            
+            <div class="exit-counter" id="exitCounter">
+                <div class="exit-dot"></div>
+                <div class="exit-dot"></div>
+                <div class="exit-dot"></div>
+            </div>
+            
+            <div id="warningTitle" class="warning-text">AMARAN</div>
+            <p style="font-size:0.9rem;margin-bottom:0.75rem;color:var(--text)">
+                Anda telah keluar dari skrin penuh.<br>
+                Sila kembali untuk meneruskan aktiviti.
+            </p>
+            <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem">
+                <span id="exitRemain">3</span> kali lagi sistem akan menghantar jawapan secara automatik.
+            </p>
+            
+            <button class="btn" style="width:auto;padding:0.6rem 1.5rem" onclick="returnToActivity()">
+                Kembali ke Aktiviti
+            </button>
         </div>
     </div>
 
@@ -241,7 +314,6 @@
             </div>
             
             <div style="flex:1;overflow:auto;padding:0.5rem">
-                <!-- Drop Zones - 2x2 Grid -->
                 <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.5rem;margin-bottom:0.5rem">
                     <div class="drop-zone green" data-cat="akademik">
                         <div class="zone-header">
@@ -288,7 +360,6 @@
                     </div>
                 </div>
                 
-                <!-- Items List -->
                 <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.6rem">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
                         <h3 style="font-size:0.8rem">Senarai Aktiviti (Seret ke Kategori)</h3>
@@ -315,6 +386,11 @@
                     <div style="font-size:0.65rem;color:var(--muted)">daripada 100</div>
                 </div>
             </div>
+            
+            <div id="autoSubmitMsg" style="display:none;background:rgba(239,68,68,0.15);border:1px solid var(--red);border-radius:6px;padding:0.5rem;margin-bottom:0.75rem;font-size:0.8rem;color:var(--red)">
+                Jawapan dihantar secara automatik kerana keluar skrin 3 kali
+            </div>
+            
             <div style="margin-bottom:0.75rem">
                 <div id="scoreMsg" style="font-size:0.95rem;margin-bottom:0.2rem">-</div>
                 <div id="scorePct" style="font-size:0.8rem;color:var(--muted)">-</div>
@@ -675,7 +751,6 @@
 
         // ===== 78 KELAB & PERSATUAN (SPI KPM) + UNIFORM + SUKAN =====
         const ACTIVITIES = [
-            // ===== BAHASA (Akademik) =====
             { name: "Persatuan Bahasa Arab", cat: "akademik" },
             { name: "Persatuan Bahasa Cina", cat: "akademik" },
             { name: "Persatuan Bahasa dan Kesusasteraan", cat: "akademik" },
@@ -689,8 +764,6 @@
             { name: "Persatuan Bahasa Perancis", cat: "akademik" },
             { name: "Persatuan Bahasa Tamil", cat: "akademik" },
             { name: "Kelab Lukisan Kejuruteraan", cat: "akademik" },
-            
-            // ===== STEM DAN TVE (Akademik) =====
             { name: "Kelab STEM/Solar", cat: "akademik" },
             { name: "Kelab Astronomi/Falak", cat: "akademik" },
             { name: "Kelab Avionik", cat: "akademik" },
@@ -708,8 +781,6 @@
             { name: "Persatuan Sejarah", cat: "akademik" },
             { name: "Kelab Sivik/Moral", cat: "akademik" },
             { name: "Persatuan Tingkatan 6", cat: "akademik" },
-            
-            // ===== SAINS SOSIAL (Akademik) =====
             { name: "Kelab Kepimpinan", cat: "akademik" },
             { name: "Kelab Keselamatan Jalan Raya", cat: "akademik" },
             { name: "Kelab Kesihatan", cat: "akademik" },
@@ -717,8 +788,6 @@
             { name: "Kelab Pencegahan Jenayah", cat: "akademik" },
             { name: "Kelab Pengguna", cat: "akademik" },
             { name: "Kelab Sains Kemasyarakatan", cat: "akademik" },
-            
-            // ===== KEAGAMAAN (Akademik) =====
             { name: "Kelab Kemahiran Al-Quran/Hafazan", cat: "akademik" },
             { name: "Kelab Tarannum dan Qiraat", cat: "akademik" },
             { name: "Kelab Agama Buddha", cat: "akademik" },
@@ -726,21 +795,15 @@
             { name: "Persatuan Agama Islam", cat: "akademik" },
             { name: "Kelab Agama Kristian", cat: "akademik" },
             { name: "Kelab Ulul Albab", cat: "akademik" },
-            
-            // ===== KENEGARAAN (Akademik) =====
             { name: "Kelab Malaysiaku", cat: "akademik" },
             { name: "Kelab Perpaduan", cat: "akademik" },
             { name: "Kelab Rukun Negara", cat: "akademik" },
-            
-            // ===== KERJAYA (Kelab) =====
             { name: "Kelab Doktor Muda", cat: "kelab" },
             { name: "Kelab Fotografi", cat: "kelab" },
             { name: "Kelab Juruterbang", cat: "kelab" },
             { name: "Kelab Katering", cat: "kelab" },
             { name: "Kelab Kerjaya", cat: "kelab" },
             { name: "Kelab Pemimpin Muda Sukan", cat: "kelab" },
-            
-            // ===== KEBAJIKAN DAN HOBI (Kelab) =====
             { name: "Kelab Audio Visual", cat: "kelab" },
             { name: "Kelab Filateli (Kumpul Setem)", cat: "kelab" },
             { name: "Kelab Interact/Leo/Rotary", cat: "kelab" },
@@ -748,22 +811,16 @@
             { name: "Kelab Numesmatik (Kumpul Syiling)", cat: "kelab" },
             { name: "Kelab UNESCO", cat: "kelab" },
             { name: "Kelab Kembara", cat: "kelab" },
-            
-            // ===== ALAM SEKITAR (Kelab) =====
             { name: "Kelab Skim Pinjaman Buku Teks", cat: "kelab" },
             { name: "Kelab Rakan Muda", cat: "kelab" },
             { name: "Kelab Alam Sekitar", cat: "kelab" },
             { name: "Kelab Keceriaan/Landskap", cat: "kelab" },
             { name: "Kelab Kitar Semula", cat: "kelab" },
             { name: "Kelab Briged Sungai", cat: "kelab" },
-            
-            // ===== KESENIAN (Kelab) =====
             { name: "Kelab Seni Muzik", cat: "kelab" },
             { name: "Kelab Seni Tari", cat: "kelab" },
             { name: "Kelab Seni Teater", cat: "kelab" },
             { name: "Kelab Seni Visual", cat: "kelab" },
-            
-            // ===== KEUSAHAWANAN (Kelab) =====
             { name: "Kelab Pelaburan Bijak PNB", cat: "kelab" },
             { name: "Kelab Perdagangan", cat: "kelab" },
             { name: "Kelab Ekonomi", cat: "kelab" },
@@ -772,8 +829,6 @@
             { name: "Kelab Usahawan Muda/Tunas Niaga", cat: "kelab" },
             { name: "Kelab Akaun", cat: "kelab" },
             { name: "Kelab Kewangan", cat: "kelab" },
-            
-            // ===== BADAN BERUNIFORM =====
             { name: "Pengakap", cat: "uniform" },
             { name: "Pandu Puteri", cat: "uniform" },
             { name: "Kadet Remaja Sekolah (KRS)", cat: "uniform" },
@@ -785,8 +840,6 @@
             { name: "Pasukan Pancaragam", cat: "uniform" },
             { name: "Taekwondo", cat: "uniform" },
             { name: "Silat", cat: "uniform" },
-            
-            // ===== SUKAN DAN PERMAINAN =====
             { name: "Bola Sepak", cat: "sukan" },
             { name: "Badminton", cat: "sukan" },
             { name: "Sepak Takraw", cat: "sukan" },
@@ -804,25 +857,138 @@
         document.getElementById('debugItems').textContent = ACTIVITIES.length;
         document.getElementById('totalItems').textContent = ACTIVITIES.length;
 
+        // ===== STATE =====
         let currentStudent = null;
         let placed = { akademik: [], kelab: [], uniform: [], sukan: [] };
         let startTime = null;
-        let attempts = JSON.parse(localStorage.getItem('kpm_kk_78') || '{}');
+        let attempts = JSON.parse(localStorage.getItem('kpm_kk_78_v2') || '{}');
+        
+        // ===== EXIT COUNTER =====
+        let exitCount = 0;
+        const MAX_EXIT = 3;
+        let isAutoSubmitted = false;
 
+        // ===== FULLSCREEN FUNCTIONS =====
         function enterFS() {
             const el = document.documentElement;
             if (el.requestFullscreen) el.requestFullscreen();
             else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
         }
 
-        document.addEventListener('fullscreenchange', () => {
-            if (document.getElementById('activityScr').classList.contains('active') && !document.fullscreenElement) {
-                document.getElementById('fsWarning').classList.add('show');
-            } else {
-                document.getElementById('fsWarning').classList.remove('show');
-            }
-        });
+        function isFullscreen() {
+            return !!(document.fullscreenElement || document.webkitFullscreenElement);
+        }
 
+        function updateExitCounter() {
+            const dots = document.querySelectorAll('.exit-dot');
+            const remain = MAX_EXIT - exitCount;
+            
+            dots.forEach((dot, index) => {
+                dot.classList.remove('active', 'warning');
+                if (index < exitCount) {
+                    dot.classList.add('active');
+                } else if (exitCount === MAX_EXIT - 1) {
+                    dot.classList.add('warning');
+                }
+            });
+            
+            document.getElementById('exitRemain').textContent = remain;
+            
+            const warningIcon = document.getElementById('warningIcon');
+            const warningTitle = document.getElementById('warningTitle');
+            
+            if (exitCount >= MAX_EXIT - 1) {
+                warningIcon.classList.remove('warning');
+                warningIcon.classList.add('danger');
+                warningIcon.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+                warningTitle.className = 'danger-text';
+                warningTitle.textContent = 'AMARAN TERAKHIR';
+            } else {
+                warningIcon.classList.remove('danger');
+                warningIcon.classList.add('warning');
+                warningIcon.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+                warningTitle.className = 'warning-text';
+                warningTitle.textContent = 'AMARAN';
+            }
+        }
+
+        function returnToActivity() {
+            enterFS();
+            document.getElementById('fsWarning').classList.remove('show');
+        }
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+        function handleFullscreenChange() {
+            const activityScr = document.getElementById('activityScr');
+            const fsWarning = document.getElementById('fsWarning');
+            
+            if (activityScr.classList.contains('active')) {
+                if (!isFullscreen() && !isAutoSubmitted) {
+                    exitCount++;
+                    updateExitCounter();
+                    
+                    if (exitCount >= MAX_EXIT) {
+                        // Auto submit
+                        isAutoSubmitted = true;
+                        fsWarning.classList.remove('show');
+                        autoSubmitActivity();
+                    } else {
+                        fsWarning.classList.add('show');
+                    }
+                }
+            }
+        }
+
+        function autoSubmitActivity() {
+            // Calculate current score
+            let correct = 0, wrong = 0;
+            Object.values(placed).forEach(arr => arr.forEach(i => i.correct ? correct++ : wrong++));
+            
+            const dur = Math.round((Date.now() - startTime) / 1000);
+            const mins = Math.floor(dur / 60);
+            const secs = dur % 60;
+            const totalAnswered = Object.values(placed).flat().length;
+            const pct = ACTIVITIES.length > 0 ? Math.round((correct / ACTIVITIES.length) * 100) : 0;
+            
+            // Save attempt
+            attempts[currentStudent.id] = { 
+                correct, 
+                wrong, 
+                dur, 
+                autoSubmitted: true,
+                exitCount: exitCount
+            };
+            localStorage.setItem('kpm_kk_78_v2', JSON.stringify(attempts));
+            
+            // Show result
+            document.getElementById('activityScr').classList.remove('active');
+            document.getElementById('resultScr').classList.add('active');
+            
+            document.getElementById('scoreNum').textContent = correct;
+            document.getElementById('cCount').textContent = correct;
+            document.getElementById('iCount').textContent = wrong;
+            document.getElementById('sCount').textContent = ACTIVITIES.length - totalAnswered;
+            document.getElementById('scorePct').textContent = pct + '% markah';
+            document.getElementById('rName').textContent = currentStudent.name;
+            document.getElementById('rClass').textContent = currentStudent.class;
+            document.getElementById('rTime').textContent = mins + ' min ' + secs + ' saat';
+            
+            // Show auto submit message
+            document.getElementById('autoSubmitMsg').style.display = 'block';
+            
+            setTimeout(() => {
+                document.getElementById('scoreCircle').style.background = `conic-gradient(var(--green) ${pct * 3.6}deg, var(--border) 0deg)`;
+            }, 100);
+            
+            let msg = pct >= 80 ? 'Cemerlang!' : pct >= 60 ? 'Bagus!' : pct >= 40 ? 'Cuba lagi.' : 'Perlu ulang kaji.';
+            document.getElementById('scoreMsg').textContent = msg;
+            
+            history.pushState(null, '', location.href);
+        }
+
+        // ===== LOGIN =====
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const input = document.getElementById('inputKP').value.trim().replace(/\D/g, '');
@@ -841,6 +1007,10 @@
 
         function startActivity() {
             enterFS();
+            exitCount = 0;
+            isAutoSubmitted = false;
+            updateExitCounter();
+            
             document.getElementById('loginScr').classList.remove('active');
             document.getElementById('activityScr').classList.add('active');
             document.getElementById('sName').textContent = currentStudent.name;
@@ -900,7 +1070,7 @@
 
         function updateProgress() {
             const total = Object.values(placed).flat().length;
-            const pct = (total / ACTIVITIES.length) * 100;
+            const pct = ACTIVITIES.length > 0 ? (total / ACTIVITIES.length) * 100 : 0;
             document.getElementById('progNum').textContent = total;
             document.getElementById('progBar').style.width = pct + '%';
             document.getElementById('remainCount').textContent = ACTIVITIES.length - total;
@@ -919,10 +1089,10 @@
             const dur = Math.round((Date.now() - startTime) / 1000);
             const mins = Math.floor(dur / 60);
             const secs = dur % 60;
-            const pct = Math.round((correct / ACTIVITIES.length) * 100);
+            const pct = ACTIVITIES.length > 0 ? Math.round((correct / ACTIVITIES.length) * 100) : 0;
             
             attempts[currentStudent.id] = { correct, wrong, dur };
-            localStorage.setItem('kpm_kk_78', JSON.stringify(attempts));
+            localStorage.setItem('kpm_kk_78_v2', JSON.stringify(attempts));
             
             document.getElementById('activityScr').classList.remove('active');
             document.getElementById('resultScr').classList.add('active');
